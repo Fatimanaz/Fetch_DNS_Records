@@ -19,14 +19,60 @@ app.use(cors({
 // 	next();
 // });
 
-app.get('/home', function (req, res) {
-  res.send('Hello World!');
-});
-app.get('/:name/:resourse/:type' , function(req , res) {
+app.get('/:name/:resourse/:type/:sourceip/:reverseip/:ipversion/:recursion/:protocol/:tracing/:shorten/:port/:timeout/:numtries' , function(req , res) {
 	var name = req.params.name ;
 	var resourse = req.params.resourse ;
 	var type = req.params.type ;
-	dig([name, 'ANY'])
+	var sourceip = req.params.sourceip ;
+	var reverseip = req.params.reverseip ;
+	var ipversion = req.params.ipversion ;
+	var recursion = req.params.recursion ;
+	var protocol = req.params.protocol ;
+	var tracing = req.params.tracing ;
+	var shorten = req.params.shorten ;
+	var port = req.params.port ;
+	var timeout = req.params.timeout ;
+	var numtries = req.params.numtries ;
+	let args = [];
+	let array = [] ;
+	if (name!=" "){
+		args.push(name);
+	}
+	if (resourse!=" "){
+		args.push(resourse);
+	}
+	args.push(type);
+	if (sourceip!=="-b "){
+		array.push(args);
+	}
+	if (reverseip !==" "){
+		array.push(reverseip);
+	}
+	if (ipversion!==" "){
+		array.push(ipversion);
+	}
+	if (recursion!==" "){
+		array.push(recursion);
+	}
+	
+	if (protocol!==" "){
+		array.push(protocol);
+	}
+	if (tracing!==" "){
+		array.push(tracing);
+	}
+	if (shorten!==" "){
+		array.push(shorten);
+	}
+	if(port!=="-p "){
+		array.push(port);
+	}
+	array.push(timeout);
+	array.push(numtries);
+	console.log(args);
+	console.log(array );
+	
+	dig(args, array)
 	.then((result) => {
 		res.json(result);
 	})
