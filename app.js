@@ -1,4 +1,3 @@
-
 const express = require('express');
 const app = express();
 const port = process.env.PORT || "8000" ;
@@ -19,83 +18,106 @@ app.use(cors({
 // 	next();
 // });
 
-app.get('/:name/:resourse/:type/:sourceip/:reverseip/:ipversion/:recursion/:protocol/:tracing/:shorten/:port/:timeout/:numtries' , function(req , res) {
-	var name = req.params.name ;
-	var resourse = req.params.resourse ;
-	var type = req.params.type ;
-	var sourceip = req.params.sourceip ;
-	var reverseip = req.params.reverseip ;
-	var ipversion = req.params.ipversion ;
-	var recursion = req.params.recursion ;
-	var protocol = req.params.protocol ;
-	var tracing = req.params.tracing ;
-	var shorten = req.params.shorten ;
-	var port = req.params.port ;
-	var timeout = req.params.timeout ;
-	var numtries = req.params.numtries ;
+const { exec,execSync } = require("child_process");
+var bodyParser = require('body-parser');
+const { reverse } = require('dns');
+//const { stdout } = require('process');
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+
+app.get('/:name/:resourse/:type/:sourceip/:reversedns/:reverseip/:ipversion/:recursion/:protocol/:tracing/:shorten/:port/:timeout/:numtries' , function(req , res) {
+	var name = req.params.name ; //name of the server
+	var resourse = req.params.resourse ; //name of the specific server if needed
+	var type = req.params.type ; //type of the record A,AAAA,MX,CNAME
+	var sourceip = req.params.sourceip ; //the IP address of the system through which the DNS request would be made. IP needs to be a valid IP on the network
+	var reverseip = req.params.reverseip ;	//If the user wishes to perform a reverse DNS Query, in that case the IP address of the server is needed only
+	var reversedns = req.params.reversedns;
+	var ipversion = req.params.ipversion ; //We can force the query to be made in a way that data only travels on the IP version 4 or 6.
+	var recursion = req.params.recursion ;	//We can enable or disable recursion
+	var protocol = req.params.protocol ;	//Default is UDP for the queries except two types of query but we can force the query to be made on TCP only or not.
+	var tracing = req.params.tracing ;	//Enable or disable Tracing
+	var shorten = req.params.shorten ;	//Shorten the answer to not provide names, class etc in the list of IPs provided
+	var port = req.params.port ;	//Port number of the DNS Server, default is 53, but we can check on other port numbers
+	var timeout = req.params.timeout ;	//The timeout of a query after which the process is killed can be changed
+	var numtries = req.params.numtries ; //Default is 3 UDP tries, but we can change it
 	let args = [];
 	let array = [] ;
-	if (name!=" "){
-		args.push(name);
-	}
-	if (resourse!=" "){
-		args.push(resourse);
-	}
-	args.push(type);
-	if (sourceip!=="-b "){
-		array.push(args);
-	}
-	if (reverseip !==" "){
-		array.push(reverseip);
-	}
-	if (ipversion!==" "){
-		array.push(ipversion);
-	}
-	if (recursion!==" "){
-		array.push(recursion);
-	}
-	
-	if (protocol!==" "){
-		array.push(protocol);
-	}
-	if (tracing!==" "){
-		array.push(tracing);
-	}
-	if (shorten!==" "){
-		array.push(shorten);
-	}
-	if(port!=="-p "){
-		array.push(port);
-	}
-	array.push(timeout);
-	array.push(numtries);
-	console.log(args);
-	console.log(array );
-	
-	dig(args, array)
-	.then((result) => {
-		res.json(result);
-	})
-	.catch((err) => {
-	console.log('Error:', err);
-	});
-	
+	var final_command = '';
 
+	if (reversedns === "true") {
+		final_command = final_command + 'dig ' + reverseip;
+	}
+	else {
+		if (name !== " ") {
+			final_command = final_command + 'dig ' + ' @' + name + ' ' + resourse + ' ' + type;
+		} else {
+			final_command = final_command + 'dig ' + resourse + ' ' + type;
+		}
+	}
+
+	if (sourceip !== "-b ") {
+		final_command = final_command + " " + sourceip; 
+	}
+
+	if (ipversion !== " ") {
+		final_command = final_command + " " + ipversion; 
+	}
+
+	if(port!=="-p "){
+		final_command = final_command + " " + port;
+	}
+	
+	if (recursion!==" "){
+		final_command = final_command + " " + recursion;
+	}
+
+	if (protocol!==" "){
+		final_command = final_command + " " + protocol;
+	}
+
+	if (tracing!==" "){
+		final_command = final_command + " " + tracing;
+	}
+
+	if (shorten!==" "){
+		final_command = final_command + " " + shorten;
+	}
+
+
+	final_command = final_command + " " + timeout + " " + numtries
+
+	final_command = final_command + " +nocomments +noquestion +noauthority +noadditional +nostats";
+	console.log(final_command);
+	var display;
+ 
+	//final_command = final_command + "| awk '{if (NR>3){print}}'| tr -s '\t' | jq -R 'split('\t') |{Name:.[0],TTL:.[1],Class:.[2],Type:.[3],IpAddress:.[4]}' | jq --slurp .";
+
+	// exec(final_command, (error, stdout, stderr) => {
+	// 	if (error) {
+	// 		display = `error: ${error.message}`;
+	// 		console.log(`error: ${error.message}`);
+	// 		return;
+	// 	}
+	// 	if (stderr) {
+	// 		display = `stderr: ${stderr}`
+	// 		console.log(`stderr: ${stderr}`);
+	// 		return;
+	// 	}
+	// 	console.log(`stdout: ${stdout}`);
+	// 	return 
+	// });
+
+	try {
+		var stdout = execSync(final_command);
+		display = stdout.toString();
+		console.log(display);
+		res.send(display);
+	}
+	catch {
+		res.send("Invalid Input please check again");
+	}
 
 })
 app.listen(port, function () {
   console.log('Example app listening on port 8000!');
 });
-// function main(){
-//   var dig = require('node-dig-dns');
-//   console.log("Hello goorm!");
-//   dig(['google.com', 'ANY'])
-//    .then((result) => {
-//   console.log(result)
-//    })
-//    .catch((err) => {
-//   console.log('Error:', err);
-//    });
-//   }
-  
-//   main();
