@@ -3,6 +3,10 @@ const app = express();
 const port = process.env.PORT || "8000" ;
 const cors=require('cors');
 const dig = require('node-dig-dns');
+const { exec,execSync } = require("child_process");
+var bodyParser = require('body-parser');
+const { reverse } = require('dns');
+// Allow different origin to use api , url
 app.use(cors({
 	origin: "http://localhost:3000",//frontend server localhost:3000 in dev , 9000 in production
 	methods:['GET','POST','PUT','DELETE'],
@@ -18,9 +22,7 @@ app.use(cors({
 // 	next();
 // });
 
-const { exec,execSync } = require("child_process");
-var bodyParser = require('body-parser');
-const { reverse } = require('dns');
+
 //const { stdout } = require('process');
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
